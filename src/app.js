@@ -65,8 +65,8 @@ export function createApp() {
     res.json({
       success: true, data: {
         name: 'ytback', version: '2.0.0', platforms: [
-          'youtube', 'tiktok', 'instagram', 'facebook', 'vimeo', 'twitch', 'twitter', 'dailymotion', 'reddit', 'soundcloud',
-          'bilibili', 'rumble', 'kick', 'snapchat', 'linkedin', 'pinterest', 'patreon', 'streamable', 'tumblr', 'niconico'
+          'youtube', 'tiktok', 'instagram', 'facebook', 'vimeo', 'twitch', 'dailymotion', 'reddit', 'soundcloud',
+          'kick', 'snapchat', 'linkedin', 'pinterest', 'niconico'
         ], docs: '/api/health'
       }
     });

@@ -16,7 +16,7 @@ export function getCapabilities(_req, res) {
     data: {
       supportedPlatforms: [
         'youtube', 'tiktok', 'instagram', 'facebook', 'vimeo', 'twitch', 'dailymotion', 'reddit', 'soundcloud',
-        'bilibili', 'kick', 'snapchat', 'linkedin', 'pinterest', 'niconico'
+        'kick', 'snapchat', 'linkedin', 'pinterest', 'niconico'
       ],
       videoQualities: supportedVideoQualities(),
       videoContainers: ['mp4', 'mkv', 'webm'],

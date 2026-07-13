@@ -1,8 +1,8 @@
 # ytback
 
-Production-ready Node.js REST backend that wraps **yt-dlp** and **ffmpeg**. Accepts YouTube, TikTok, Instagram, Facebook, Vimeo, Twitch, Dailymotion, Reddit, SoundCloud, Bilibili, Kick, Snapchat, LinkedIn, Pinterest, or Niconico URLs. Returns full metadata + format lists, downloads video/audio through a bounded concurrency queue, streams live progress, and serves the resulting files with HTTP Range support.
+Production-ready Node.js REST backend that wraps **yt-dlp** and **ffmpeg**. Accepts YouTube, TikTok, Instagram, Facebook, Vimeo, Twitch, Dailymotion, Reddit, SoundCloud, Kick, Snapchat, LinkedIn, Pinterest, or Niconico URLs. Returns full metadata + format lists, downloads video/audio through a bounded concurrency queue, streams live progress, and serves the resulting files with HTTP Range support.
 
-No frontend. REST only. Supports **YouTube**, **TikTok**, **Instagram**, **Facebook**, **Vimeo**, **Twitch**, **Dailymotion**, **Reddit**, **SoundCloud**, **Bilibili**, **Kick**, **Snapchat**, **LinkedIn**, **Pinterest**, and **Niconico**.
+No frontend. REST only. Supports **YouTube**, **TikTok**, **Instagram**, **Facebook**, **Vimeo**, **Twitch**, **Dailymotion**, **Reddit**, **SoundCloud**, **Kick**, **Snapchat**, **LinkedIn**, **Pinterest**, and **Niconico**.
 
 ---
 
@@ -68,7 +68,7 @@ Returns supported platforms, quality labels, containers, and audio formats/quali
 { "success": true, "data": {
   "supportedPlatforms": [
     "youtube", "tiktok", "instagram", "facebook", "vimeo", "twitch", "dailymotion", "reddit", "soundcloud",
-    "bilibili", "kick", "snapchat", "linkedin", "pinterest", "niconico"
+    "kick", "snapchat", "linkedin", "pinterest", "niconico"
   ],
   "videoQualities": ["144p","240p","360p","480p","720p","1080p","1440p","2160p","4k","4320p","8k","best","worst"],
   "videoContainers": ["mp4","mkv","webm"],
@@ -268,4 +268,4 @@ temp/                  yt-dlp working dir
 
 - Jobs live in process memory — a restart loses in-flight jobs (their temp files are swept on the next cleanup tick).
 - No auth. Put it behind a gateway / API key in production.
-- Only supported platform URLs are accepted; other platforms are rejected early at validation time before yt-dlp is spawned. Supported platforms: YouTube, TikTok, Instagram, Facebook, Vimeo, Twitch, Dailymotion, Reddit, SoundCloud, Bilibili, Kick, Snapchat, LinkedIn, Pinterest, and Niconico.
+- Only supported platform URLs are accepted; other platforms are rejected early at validation time before yt-dlp is spawned. Supported platforms: YouTube, TikTok, Instagram, Facebook, Vimeo, Twitch, Dailymotion, Reddit, SoundCloud, Kick, Snapchat, LinkedIn, Pinterest, and Niconico.

@@ -12,7 +12,6 @@ import dailymotionRoutes from '../modules/dailymotion/dailymotion.routes.js';
 import redditRoutes from '../modules/reddit/reddit.routes.js';
 import soundcloudRoutes from '../modules/soundcloud/soundcloud.routes.js';
 
-import bilibiliRoutes from '../modules/bilibili/bilibili.routes.js';
 import kickRoutes from '../modules/kick/kick.routes.js';
 import snapchatRoutes from '../modules/snapchat/snapchat.routes.js';
 import linkedinRoutes from '../modules/linkedin/linkedin.routes.js';
@@ -36,7 +35,6 @@ router.use('/dailymotion', dailymotionRoutes);
 router.use('/reddit', redditRoutes);
 router.use('/soundcloud', soundcloudRoutes);
 
-router.use('/bilibili', bilibiliRoutes);
 router.use('/kick', kickRoutes);
 router.use('/snapchat', snapchatRoutes);
 router.use('/linkedin', linkedinRoutes);
