@@ -5,7 +5,7 @@ BIN_DIR="${YTDLP_BIN_DIR:-./bin}"
 mkdir -p "$BIN_DIR"
 
 # ── yt-dlp ──────────────────────────────────────────────────
-YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp"
+YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux"
 YTDLP_PATH="$BIN_DIR/yt-dlp"
 
 if [ ! -f "$YTDLP_PATH" ]; then
