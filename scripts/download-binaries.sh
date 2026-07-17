@@ -9,10 +9,10 @@ YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linu
 YTDLP_PATH="$BIN_DIR/yt-dlp"
 
 if [ ! -f "$YTDLP_PATH" ]; then
-  echo "Downloading yt-dlp..."
-  curl -fsSL "$YTDLP_URL" -o "$YTDLP_PATH"
+  echo "Downloading yt-dlp ($YTDLP_URL)..."
+  wget -q --timeout=120 "$YTDLP_URL" -O "$YTDLP_PATH"
   chmod +x "$YTDLP_PATH"
-  echo "yt-dlp installed at $YTDLP_PATH"
+  "$YTDLP_PATH" --version && echo "yt-dlp installed at $YTDLP_PATH"
 fi
 
 # ── ffmpeg ───────────────────────────────────────────────────
