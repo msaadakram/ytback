@@ -41,6 +41,7 @@ export const config = {
   // COOKIES_FROM_BROWSER: browser name to extract cookies from (e.g. 'chrome', 'firefox')
   cookiesFile: process.env.COOKIES_FILE || '',
   cookiesFromBrowser: process.env.COOKIES_FROM_BROWSER || '',
+  cookiesFileDefault: path.resolve(ROOT, 'cookies.txt'),
 
   // Safety net only — yt-dlp ops have their own timeout via maxDownloadTime.
   // Set high enough that it never pre-empts a legitimate fetch.

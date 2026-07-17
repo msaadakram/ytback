@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { config } from '../config/index.js';
 import logger from '../utils/logger.js';
 import { Errors } from '../utils/HttpError.js';
@@ -6,10 +7,12 @@ import { Errors } from '../utils/HttpError.js';
 /**
  * Inject cookie authentication args into a yt-dlp arg array.
  * Supports COOKIES_FILE (Netscape cookies.txt) or COOKIES_FROM_BROWSER (e.g. 'chrome').
+ * If neither is set, falls back to cookies.txt in the project root.
  */
 function injectCookieArgs(args) {
-    if (config.cookiesFile) {
-        args.unshift('--cookies', config.cookiesFile);
+    const cookiesFile = config.cookiesFile || (fs.existsSync(config.cookiesFileDefault) ? config.cookiesFileDefault : null);
+    if (cookiesFile) {
+        args.unshift('--cookies', cookiesFile);
     } else if (config.cookiesFromBrowser) {
         args.unshift('--cookies-from-browser', config.cookiesFromBrowser);
     }
