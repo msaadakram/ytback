@@ -25,7 +25,7 @@ export function fetchInfo(url, { timeoutMs = config.maxDownloadTime * 1000 } = {
         '--no-playlist',
         '--dump-single-json',
         '--no-check-certificate',
-        '--extractor-args', 'youtube:player_client=all',
+        '--extractor-args', 'youtube:player_client=android,web',
         '--extractor-args', 'generic:impersonate',
         url,
     ];
@@ -122,9 +122,10 @@ export function parseFilenameLine(line) {
  * Resolves with { filepath } when finished.
  */
 export function runDownload(args, { onProgress, onFilename, timeoutMs = config.maxDownloadTime * 1000 } = {}) {
-    if (!args.includes('--extractor-args')) {
+    const hasExtractorArgs = args.includes('--extractor-args');
+    if (!hasExtractorArgs) {
+        args.unshift('--extractor-args', 'youtube:player_client=android,web');
         args.unshift('--extractor-args', 'generic:impersonate');
-        args.unshift('--extractor-args', 'youtube:player_client=all');
     }
     injectCookieArgs(args);
     return new Promise((resolve, reject) => {
