@@ -33,8 +33,8 @@ export const config = {
 
   autoDeleteMinutes: parseInt(process.env.AUTO_DELETE_MINUTES || '60', 10),
 
-  ytdlpBin: process.env.YTDLP_BIN || 'yt-dlp',
-  ffmpegBin: process.env.FFMPEG_BIN || 'ffmpeg',
+  ytdlpBin: process.env.YTDLP_BIN || path.resolve(ROOT, 'bin', 'yt-dlp'),
+  ffmpegBin: process.env.FFMPEG_BIN || path.resolve(ROOT, 'bin', 'ffmpeg', 'ffmpeg'),
 
   // Cookie authentication for platforms that require login (e.g. Instagram).
   // COOKIES_FILE: path to a Netscape-format cookies.txt file

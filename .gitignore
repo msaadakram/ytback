@@ -2,6 +2,7 @@ node_modules/
 downloads/
 temp/
 logs/
+bin/
 .env
 *.log
 .DS_Store
