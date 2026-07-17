@@ -17,6 +17,7 @@ import snapchatRoutes from '../modules/snapchat/snapchat.routes.js';
 import linkedinRoutes from '../modules/linkedin/linkedin.routes.js';
 import pinterestRoutes from '../modules/pinterest/pinterest.routes.js';
 import niconicoRoutes from '../modules/niconico/niconico.routes.js';
+import universalRoutes from '../modules/universal/universal.routes.js';
 
 const router = Router();
 
@@ -40,6 +41,9 @@ router.use('/snapchat', snapchatRoutes);
 router.use('/linkedin', linkedinRoutes);
 router.use('/pinterest', pinterestRoutes);
 router.use('/niconico', niconicoRoutes);
+
+// Universal endpoint — auto-detect platform for any URL
+router.use('/', universalRoutes);
 
 // Job tracking (shared across platforms)
 router.get('/job/:id', getJobStatus);
