@@ -4,6 +4,7 @@ temp/
 logs/
 bin/
 .env
+cookies.txt
 *.log
 .DS_Store
 coverage/

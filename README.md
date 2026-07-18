@@ -50,6 +50,9 @@ Server listens on `http://localhost:4000` by default.
 | `AUTO_DELETE_MINUTES` | `60` | Job + file TTL |
 | `YTDLP_BIN` | `yt-dlp` | Path to yt-dlp binary |
 | `FFMPEG_BIN` | `ffmpeg` | Path to ffmpeg binary |
+| `COOKIES_FILE` | — | Path to a Netscape cookies.txt file (checked on disk) |
+| `YOUTUBE_COOKIES` | — | Base64-encoded Netscape cookies.txt; materialized to disk at boot. Recommended on Heroku to keep login cookies out of git. Set with `heroku config:set YOUTUBE_COOKIES="$(base64 -w0 cookies.txt)" -a <app>` |
+| `COOKIES_FROM_BROWSER` | — | Browser name to extract cookies from (e.g. `chrome`, `firefox`) |
 
 ## API
 

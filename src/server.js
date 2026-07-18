@@ -2,11 +2,13 @@ import http from 'node:http';
 import { createApp } from './app.js';
 import { config } from './config/index.js';
 import { ensureDirs } from './config/dirs.js';
+import { ensureCookiesFile } from './config/cookies.js';
 import logger from './utils/logger.js';
 import { startCleanupJob, runCleanup } from './jobs/cleanup.js';
 import { downloadQueue } from './queue/index.js';
 
 ensureDirs();
+ensureCookiesFile();
 
 const app = createApp();
 const server = http.createServer(app);
