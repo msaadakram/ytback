@@ -29,14 +29,17 @@ const TEST_URLS = {
 
 export const listCookies = wrapAsync(async (req, res) => {
   const db = getDb();
-  const rows = db.prepare('SELECT platform, notes, updated_at FROM platform_cookies ORDER BY platform').all();
+  const rows = await db.collection('platform_cookies')
+    .find({}, { projection: { _id: 0, platform: 1, notes: 1, updated_at: 1 } })
+    .sort({ platform: 1 })
+    .toArray();
   res.json({ success: true, data: rows });
 });
 
 export const getCookie = wrapAsync(async (req, res) => {
   const { platform } = req.params;
   const db = getDb();
-  const row = db.prepare('SELECT * FROM platform_cookies WHERE platform = ?').get(platform);
+  const row = await db.collection('platform_cookies').findOne({ platform }, { projection: { _id: 0 } });
   if (!row) throw Errors.NotFound(`No cookie for platform: ${platform}`);
   res.json({ success: true, data: row });
 });
@@ -49,16 +52,20 @@ export const upsertCookie = wrapAsync(async (req, res) => {
   const filePath = path.join(COOKIE_DIR, `${platform}.txt`);
   fs.writeFileSync(filePath, cookie_data, { mode: 0o600 });
 
-  db.prepare(`
-    INSERT INTO platform_cookies (platform, cookie_data, notes, updated_at)
-    VALUES (?, ?, ?, datetime('now'))
-    ON CONFLICT(platform) DO UPDATE SET
-      cookie_data = excluded.cookie_data,
-      notes = excluded.notes,
-      updated_at = datetime('now')
-  `).run(platform, cookie_data, notes || null);
+  await db.collection('platform_cookies').updateOne(
+    { platform },
+    {
+      $set: {
+        cookie_data,
+        notes: notes || null,
+        updated_at: new Date(),
+      },
+      $setOnInsert: { created_at: new Date() },
+    },
+    { upsert: true }
+  );
 
-  cookieStore.reloadPlatform(platform);
+  await cookieStore.reloadPlatform(platform);
   logger.info({ platform }, 'cookie updated');
 
   res.json({ success: true, data: { platform, updated: true } });
@@ -67,7 +74,7 @@ export const upsertCookie = wrapAsync(async (req, res) => {
 export const deleteCookie = wrapAsync(async (req, res) => {
   const { platform } = req.params;
   const db = getDb();
-  db.prepare('DELETE FROM platform_cookies WHERE platform = ?').run(platform);
+  await db.collection('platform_cookies').deleteOne({ platform });
   cookieStore.removePlatform(platform);
   logger.info({ platform }, 'cookie deleted');
   res.json({ success: true, data: { platform, deleted: true } });

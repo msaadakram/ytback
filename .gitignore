@@ -8,3 +8,6 @@ cookies.txt
 *.log
 .DS_Store
 coverage/
+
+# runtime data (mongo-backed; cookie files regenerated)
+data/

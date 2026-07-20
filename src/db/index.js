@@ -1,57 +1,45 @@
-import Database from 'better-sqlite3';
-import fs from 'node:fs';
-import path from 'node:path';
+import { MongoClient, ObjectId } from 'mongodb';
 import { config, ROOT_DIR } from '../config/index.js';
 import logger from '../utils/logger.js';
 
-const DATA_DIR = path.resolve(ROOT_DIR, 'data');
-const DB_PATH = path.join(DATA_DIR, 'downforge.db');
+const URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const DB_NAME = process.env.MONGODB_DB || 'downforge';
 
+let client;
 let db;
 
-export function getDb() {
+export async function connectDb() {
   if (db) return db;
 
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.mkdirSync(path.join(DATA_DIR, 'cookies'), { recursive: true });
+  client = new MongoClient(URI, { serverSelectionTimeoutMS: 5000 });
+  await client.connect();
+  db = client.db(DB_NAME);
 
-  db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  await db.collection('admins').createIndex({ email: 1 }, { unique: true });
+  await db.collection('platform_cookies').createIndex({ platform: 1 }, { unique: true });
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS admins (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      name TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS platform_cookies (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      platform TEXT UNIQUE NOT NULL,
-      cookie_data TEXT NOT NULL,
-      notes TEXT,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      admin_id INTEGER NOT NULL,
-      expires_at TEXT NOT NULL,
-      FOREIGN KEY (admin_id) REFERENCES admins(id)
-    );
-  `);
-
-  logger.info({ path: DB_PATH }, 'database initialized');
+  logger.info({ uri: URI, db: DB_NAME }, 'mongodb connected');
   return db;
 }
 
+export function getDb() {
+  if (!db) {
+    throw new Error('Database not connected. Call connectDb() during boot.');
+  }
+  return db;
+}
+
+export function getClient() {
+  return client;
+}
+
 export function closeDb() {
-  if (db) {
-    db.close();
-    db = null;
+  if (client) {
+    return client.close().then(() => {
+      client = null;
+      db = null;
+    });
   }
 }
+
+export { ObjectId };

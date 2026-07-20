@@ -14,27 +14,40 @@ export function verifyPassword(password, stored) {
   return hash === verify;
 }
 
-export function seedAdmin() {
+export async function seedAdmin() {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM admins LIMIT 1').get();
+  const existing = await db.collection('admins').findOne({}, { projection: { _id: 1 } });
   if (existing) return;
 
   const hash = hashPassword('admin123');
-  db.prepare('INSERT INTO admins (email, password_hash, name) VALUES (?, ?, ?)')
-    .run('admin@downforge.me', hash, 'Admin');
+  await db.collection('admins').insertOne({
+    email: 'admin@downforge.me',
+    password_hash: hash,
+    name: 'Admin',
+    created_at: new Date(),
+  });
   logger.info('default admin seeded: admin@downforge.me / admin123');
 }
 
-export function migrateEnvCookies() {
+export async function migrateEnvCookies() {
   const db = getDb();
   const raw = process.env.YOUTUBE_COOKIES;
   if (raw && raw.trim()) {
-    const existing = db.prepare('SELECT id FROM platform_cookies WHERE platform = ?').get('youtube');
+    const existing = await db.collection('platform_cookies').findOne({ platform: 'youtube' });
     if (!existing) {
       try {
         const decoded = Buffer.from(raw.trim(), 'base64').toString('utf8');
-        db.prepare('INSERT OR IGNORE INTO platform_cookies (platform, cookie_data) VALUES (?, ?)')
-          .run('youtube', decoded);
+        await db.collection('platform_cookies').updateOne(
+          { platform: 'youtube' },
+          {
+            $set: {
+              cookie_data: decoded,
+              updated_at: new Date(),
+            },
+            $setOnInsert: { created_at: new Date() },
+          },
+          { upsert: true }
+        );
         logger.info('migrated YOUTUBE_COOKIES env var to database');
       } catch (err) {
         logger.error({ err: err.message }, 'failed to migrate YOUTUBE_COOKIES');

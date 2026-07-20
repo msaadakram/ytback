@@ -11,10 +11,10 @@ class CookieStore {
     this.platformCookies = new Map();
   }
 
-  loadFromDb() {
+  async loadFromDb() {
     try {
       const db = getDb();
-      const rows = db.prepare('SELECT platform, cookie_data FROM platform_cookies').all();
+      const rows = await db.collection('platform_cookies').find({}).toArray();
 
       fs.mkdirSync(COOKIE_DIR, { recursive: true });
 
@@ -42,10 +42,10 @@ class CookieStore {
     return null;
   }
 
-  reloadPlatform(platform) {
+  async reloadPlatform(platform) {
     try {
       const db = getDb();
-      const row = db.prepare('SELECT cookie_data FROM platform_cookies WHERE platform = ?').get(platform);
+      const row = await db.collection('platform_cookies').findOne({ platform });
       if (row) {
         const filePath = path.join(COOKIE_DIR, `${platform}.txt`);
         fs.writeFileSync(filePath, row.cookie_data, { mode: 0o600 });

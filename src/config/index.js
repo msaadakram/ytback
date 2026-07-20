@@ -43,6 +43,10 @@ export const config = {
   cookiesFromBrowser: process.env.COOKIES_FROM_BROWSER || '',
   cookiesFileDefault: path.resolve(ROOT, 'cookies.txt'),
 
+  // MongoDB connection (persists admins, sessions, per-platform cookies).
+  mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017',
+  mongoDbName: process.env.MONGODB_DB || 'downforge',
+
   // Safety net only — yt-dlp ops have their own timeout via maxDownloadTime.
   // Set high enough that it never pre-empts a legitimate fetch.
   requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS || '300000', 10),
