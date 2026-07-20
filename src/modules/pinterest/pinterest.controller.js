@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getPinterestInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'pinterest');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -66,7 +66,7 @@ export const downloadPinterestVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'pinterest');
         title = info.title || info.description || 'pinterest-video';
     } catch {
         title = 'pinterest-video';
@@ -92,7 +92,7 @@ export const downloadPinterestAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'pinterest');
         title = info.title || info.description || 'pinterest-audio';
     } catch {
         title = 'pinterest-audio';

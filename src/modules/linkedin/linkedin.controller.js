@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getLinkedinInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'linkedin');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -66,7 +66,7 @@ export const downloadLinkedinVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'linkedin');
         title = info.title || info.description || 'linkedin-video';
     } catch {
         title = 'linkedin-video';
@@ -92,7 +92,7 @@ export const downloadLinkedinAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'linkedin');
         title = info.title || info.description || 'linkedin-audio';
     } catch {
         title = 'linkedin-audio';

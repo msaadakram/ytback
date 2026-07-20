@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getNiconicoInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'niconico');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -66,7 +66,7 @@ export const downloadNiconicoVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'niconico');
         title = info.title || info.description || 'niconico-video';
     } catch {
         title = 'niconico-video';
@@ -92,7 +92,7 @@ export const downloadNiconicoAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'niconico');
         title = info.title || info.description || 'niconico-audio';
     } catch {
         title = 'niconico-audio';

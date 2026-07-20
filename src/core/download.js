@@ -152,7 +152,7 @@ async function runDownloadTask(job, args, { type }) {
     let lastFilename = null;
 
     try {
-        const res = await runDownload(args, {
+        const res = await runDownload(args, job.platform, {
             onProgress: (p) => {
                 jobStore.update(job.id, {
                     status: JobStatus.DOWNLOADING,

@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getRedditInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'reddit');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -68,7 +68,7 @@ export const downloadRedditVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'reddit');
         title = info.title || info.description || 'reddit-video';
     } catch {
         title = 'reddit-video';
@@ -94,7 +94,7 @@ export const downloadRedditAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'reddit');
         title = info.title || info.description || 'reddit-audio';
     } catch {
         title = 'reddit-audio';

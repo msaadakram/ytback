@@ -39,7 +39,7 @@ export const getUniversalInfo = wrapAsync(async (req, res) => {
   const detected = detectPlatform(url);
   const platform = detected ? detected.platform : 'generic';
 
-  const info = await fetchInfo(url);
+  const info = await fetchInfo(url, platform);
   const formats = Array.isArray(info.formats) ? info.formats : [];
 
   const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
@@ -102,7 +102,7 @@ export const downloadUniversalVideo = wrapAsync(async (req, res) => {
 
   let title;
   try {
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, platform);
     title = info.title;
   } catch {
     title = 'video';
@@ -149,7 +149,7 @@ export const downloadUniversalAudio = wrapAsync(async (req, res) => {
 
   let title;
   try {
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, platform);
     title = info.title;
   } catch {
     title = 'audio';

@@ -3,13 +3,16 @@ import fs from 'node:fs';
 import { config } from '../config/index.js';
 import logger from '../utils/logger.js';
 import { Errors } from '../utils/HttpError.js';
+import { cookieStore } from './cookieStore.js';
 
-/**
- * Inject cookie authentication args into a yt-dlp arg array.
- * Supports COOKIES_FILE (Netscape cookies.txt) or COOKIES_FROM_BROWSER (e.g. 'chrome').
- * If neither is set, falls back to cookies.txt in the project root.
- */
-function injectCookieArgs(args) {
+function injectCookieArgs(args, platform) {
+    if (platform) {
+        const cookieFile = cookieStore.getCookieFile(platform);
+        if (cookieFile) {
+            args.unshift('--cookies', cookieFile);
+            return;
+        }
+    }
     const cookiesFile = config.cookiesFile || (fs.existsSync(config.cookiesFileDefault) ? config.cookiesFileDefault : null);
     if (cookiesFile) {
         args.unshift('--cookies', cookiesFile);
@@ -18,8 +21,7 @@ function injectCookieArgs(args) {
     }
 }
 
-/** Pull the JSON metadata for a URL via yt-dlp --dump-json. */
-export function fetchInfo(url, { timeoutMs = config.maxDownloadTime * 1000 } = {}) {
+export function fetchInfo(url, platform, { timeoutMs = config.maxDownloadTime * 1000 } = {}) {
     const args = [
         '--no-warnings',
         '--no-playlist',
@@ -29,7 +31,7 @@ export function fetchInfo(url, { timeoutMs = config.maxDownloadTime * 1000 } = {
         '--extractor-args', 'generic:impersonate',
         url,
     ];
-    injectCookieArgs(args);
+    injectCookieArgs(args, platform);
     return runYtdlpJson(args, { timeoutMs });
 }
 
@@ -121,13 +123,13 @@ export function parseFilenameLine(line) {
  * Run a download. Calls onProgress for each progress line.
  * Resolves with { filepath } when finished.
  */
-export function runDownload(args, { onProgress, onFilename, timeoutMs = config.maxDownloadTime * 1000 } = {}) {
+export function runDownload(args, platform, { onProgress, onFilename, timeoutMs = config.maxDownloadTime * 1000 } = {}) {
     const hasExtractorArgs = args.includes('--extractor-args');
     if (!hasExtractorArgs) {
         args.unshift('--extractor-args', 'youtube:player_client=android,web');
         args.unshift('--extractor-args', 'generic:impersonate');
     }
-    injectCookieArgs(args);
+    injectCookieArgs(args, platform);
     return new Promise((resolve, reject) => {
         const proc = spawn(config.ytdlpBin, args, { windowsHide: true });
         let timedOut = false;

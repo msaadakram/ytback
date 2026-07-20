@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getTikTokInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'tiktok');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -69,7 +69,7 @@ export const downloadTikTokVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'tiktok');
         title = info.title;
     } catch {
         title = 'tiktok-video';
@@ -95,7 +95,7 @@ export const downloadTikTokAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'tiktok');
         title = info.title || 'tiktok-audio';
     } catch {
         title = 'tiktok-audio';

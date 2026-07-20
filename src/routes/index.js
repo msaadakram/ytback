@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { health, getCapabilities } from '../controllers/healthController.js';
 import { getJobStatus, getJobResult } from '../controllers/downloadController.js';
 import { downloadFile } from '../controllers/fileController.js';
+import adminRoutes from '../modules/admin/admin.routes.js';
 import youtubeRoutes from '../modules/youtube/youtube.routes.js';
 import tiktokRoutes from '../modules/tiktok/tiktok.routes.js';
 import instagramRoutes from '../modules/instagram/instagram.routes.js';
@@ -44,6 +45,9 @@ router.use('/niconico', niconicoRoutes);
 
 // Universal endpoint — auto-detect platform for any URL
 router.use('/', universalRoutes);
+
+// Admin
+router.use('/admin', adminRoutes);
 
 // Job tracking (shared across platforms)
 router.get('/job/:id', getJobStatus);

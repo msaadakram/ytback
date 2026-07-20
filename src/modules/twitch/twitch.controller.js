@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getTwitchInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'twitch');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -66,7 +66,7 @@ export const downloadTwitchVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'twitch');
         title = info.title || info.description || 'twitch-video';
     } catch {
         title = 'twitch-video';
@@ -92,7 +92,7 @@ export const downloadTwitchAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'twitch');
         title = info.title || info.description || 'twitch-audio';
     } catch {
         title = 'twitch-audio';

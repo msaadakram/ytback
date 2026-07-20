@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getSnapchatInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'snapchat');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -66,7 +66,7 @@ export const downloadSnapchatVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'snapchat');
         title = info.title || info.description || 'snapchat-video';
     } catch {
         title = 'snapchat-video';
@@ -92,7 +92,7 @@ export const downloadSnapchatAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'snapchat');
         title = info.title || info.description || 'snapchat-audio';
     } catch {
         title = 'snapchat-audio';

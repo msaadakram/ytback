@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getInstagramInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'instagram');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -68,7 +68,7 @@ export const downloadInstagramVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'instagram');
         title = info.title || info.description || 'instagram-video';
     } catch {
         title = 'instagram-video';
@@ -94,7 +94,7 @@ export const downloadInstagramAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'instagram');
         title = info.title || info.description || 'instagram-audio';
     } catch {
         title = 'instagram-audio';

@@ -3,11 +3,18 @@ import { createApp } from './app.js';
 import { config } from './config/index.js';
 import { ensureDirs } from './config/dirs.js';
 import { ensureCookiesFile } from './config/cookies.js';
+import { getDb } from './db/index.js';
+import { seedAdmin, migrateEnvCookies } from './db/seed.js';
+import { cookieStore } from './core/cookieStore.js';
 import logger from './utils/logger.js';
 import { startCleanupJob, runCleanup } from './jobs/cleanup.js';
 import { downloadQueue } from './queue/index.js';
 
 ensureDirs();
+getDb();
+seedAdmin();
+migrateEnvCookies();
+cookieStore.loadFromDb();
 ensureCookiesFile();
 
 const app = createApp();

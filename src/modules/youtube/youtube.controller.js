@@ -33,7 +33,7 @@ function mapFormat(f) {
 
 export const getYouTubeInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'youtube');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -80,7 +80,7 @@ export const downloadYouTubeVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'youtube');
         title = info.title;
     } catch {
         title = 'video';
@@ -106,7 +106,7 @@ export const downloadYouTubeAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'youtube');
         title = info.title;
     } catch {
         title = 'audio';

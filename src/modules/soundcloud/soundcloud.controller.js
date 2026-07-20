@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getSoundCloudInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'soundcloud');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -67,7 +67,7 @@ export const downloadSoundCloudVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'soundcloud');
         title = info.title || info.description || 'soundcloud-audio';
     } catch {
         title = 'soundcloud-audio';
@@ -93,7 +93,7 @@ export const downloadSoundCloudAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'soundcloud');
         title = info.title || info.description || 'soundcloud-audio';
     } catch {
         title = 'soundcloud-audio';

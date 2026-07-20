@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getDailymotionInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'dailymotion');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -66,7 +66,7 @@ export const downloadDailymotionVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'dailymotion');
         title = info.title || info.description || 'dailymotion-video';
     } catch {
         title = 'dailymotion-video';
@@ -92,7 +92,7 @@ export const downloadDailymotionAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'dailymotion');
         title = info.title || info.description || 'dailymotion-audio';
     } catch {
         title = 'dailymotion-audio';

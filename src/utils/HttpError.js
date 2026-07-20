@@ -18,6 +18,8 @@ export const Errors = {
   TooMany: (msg = 'Too many requests') => new HttpError(429, 'RATE_LIMIT', msg),
   DownloadFailed: (msg = 'Download failed', details) =>
     new HttpError(502, 'DOWNLOAD_FAILED', msg, details),
+  Unauthorized: (msg = 'Unauthorized', details) =>
+    new HttpError(401, 'UNAUTHORIZED', msg, details),
   Internal: (msg = 'Internal server error', details) =>
     new HttpError(500, 'INTERNAL', msg, details),
 };

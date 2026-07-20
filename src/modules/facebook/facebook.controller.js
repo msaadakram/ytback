@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getFacebookInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'facebook');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -69,7 +69,7 @@ export const downloadFacebookVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'facebook');
         title = info.title || info.description || 'facebook-video';
     } catch {
         title = 'facebook-video';
@@ -95,7 +95,7 @@ export const downloadFacebookAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'facebook');
         title = info.title || info.description || 'facebook-audio';
     } catch {
         title = 'facebook-audio';

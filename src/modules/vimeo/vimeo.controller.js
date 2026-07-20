@@ -32,7 +32,7 @@ function mapFormat(f) {
 
 export const getVimeoInfo = wrapAsync(async (req, res) => {
     const { url } = req.validated;
-    const info = await fetchInfo(url);
+    const info = await fetchInfo(url, 'vimeo');
 
     const isVideo = (f) => f.vcodec && f.vcodec !== 'none';
     const isAudio = (f) => f.acodec && f.acodec !== 'none';
@@ -67,7 +67,7 @@ export const downloadVimeoVideo = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'vimeo');
         title = info.title || info.description || 'vimeo-video';
     } catch {
         title = 'vimeo-video';
@@ -93,7 +93,7 @@ export const downloadVimeoAudio = wrapAsync(async (req, res) => {
 
     let title;
     try {
-        const info = await fetchInfo(url);
+        const info = await fetchInfo(url, 'vimeo');
         title = info.title || info.description || 'vimeo-audio';
     } catch {
         title = 'vimeo-audio';
