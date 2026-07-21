@@ -8,6 +8,7 @@ import { Errors } from '../utils/HttpError.js';
 import { sanitizeFilename, formatBytes } from '../utils/format.js';
 import { runDownload } from './ytdlp.js';
 import { JobStatus, jobStore } from './jobStore.js';
+import { recordDownload } from './usage.js';
 
 const AUDIO_EXTS = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac'];
 const AUDIO_BITRATES = {
@@ -199,6 +200,9 @@ async function runDownloadTask(job, args, { type }) {
             completedAt: Date.now(),
         });
 
+        // Persist to the user's download history (no-op for anonymous jobs).
+        recordDownload(jobStore.get(job.id), 'completed').catch(() => {});
+
         logger.info({ jobId: job.id, size: finalStat.size, file: finalName }, 'download completed');
         return jobStore.get(job.id);
     } catch (err) {
@@ -207,6 +211,8 @@ async function runDownloadTask(job, args, { type }) {
             error: err.message || String(err),
             completedAt: Date.now(),
         });
+        // Record the failed attempt in the user's history too.
+        recordDownload(jobStore.get(job.id), 'failed').catch(() => {});
         logger.error({ jobId: job.id, err: err.message }, 'download failed');
         throw err;
     }

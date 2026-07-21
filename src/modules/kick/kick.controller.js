@@ -72,7 +72,7 @@ export const downloadKickVideo = wrapAsync(async (req, res) => {
         title = 'kick-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'kick', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'kick', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadKickAudio = wrapAsync(async (req, res) => {
         title = 'kick-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'kick', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'kick', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

@@ -9,12 +9,22 @@ import router, { downloadRouter } from './routes/index.js';
 import { errorHandler, notFound } from './middlewares/error.js';
 import { apiLimiter } from './middlewares/rateLimit.js';
 import { requestTimeout } from './middlewares/timeout.js';
+import { stripeWebhook } from './modules/billing/billing.controller.js';
+import { wrapAsync } from './middlewares/error.js';
 
 export function createApp() {
   const app = express();
 
   app.use(helmet());
   app.use(compression());
+
+  // Stripe webhook needs the raw body BEFORE the JSON middleware.
+  // This route is mounted early and matches only POST /webhooks/stripe.
+  app.use('/webhooks/stripe',
+    express.raw({ type: 'application/json' }),
+    wrapAsync(stripeWebhook),
+  );
+
   // Use express.text to intercept the raw JSON string and auto-fix shell-escaped URLs
   app.use(express.text({ type: 'application/json', limit: '256kb' }));
   app.use((req, res, next) => {

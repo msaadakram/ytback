@@ -75,7 +75,7 @@ export const downloadFacebookVideo = wrapAsync(async (req, res) => {
         title = 'facebook-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'facebook', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'facebook', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -101,7 +101,7 @@ export const downloadFacebookAudio = wrapAsync(async (req, res) => {
         title = 'facebook-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'facebook', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'facebook', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

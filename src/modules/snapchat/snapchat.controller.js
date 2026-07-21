@@ -72,7 +72,7 @@ export const downloadSnapchatVideo = wrapAsync(async (req, res) => {
         title = 'snapchat-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'snapchat', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'snapchat', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadSnapchatAudio = wrapAsync(async (req, res) => {
         title = 'snapchat-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'snapchat', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'snapchat', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

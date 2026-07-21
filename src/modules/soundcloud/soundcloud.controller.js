@@ -73,7 +73,7 @@ export const downloadSoundCloudVideo = wrapAsync(async (req, res) => {
         title = 'soundcloud-audio';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'soundcloud', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'soundcloud', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -99,7 +99,7 @@ export const downloadSoundCloudAudio = wrapAsync(async (req, res) => {
         title = 'soundcloud-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'soundcloud', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'soundcloud', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

@@ -74,7 +74,7 @@ export const downloadInstagramVideo = wrapAsync(async (req, res) => {
         title = 'instagram-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'instagram', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'instagram', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -100,7 +100,7 @@ export const downloadInstagramAudio = wrapAsync(async (req, res) => {
         title = 'instagram-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'instagram', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'instagram', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

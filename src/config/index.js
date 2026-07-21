@@ -51,6 +51,15 @@ export const config = {
   // Set high enough that it never pre-empts a legitimate fetch.
   requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS || '300000', 10),
   cleanupIntervalMs: 5 * 60 * 1000,
+
+  // User sessions (UUID tokens, 30d default) and app base URL.
+  userSessionTtlHours: parseInt(process.env.USER_SESSION_TTL_HOURS || '720', 10),
+  appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+
+  // Stripe (optional — billing degrades gracefully when unset).
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+  stripeProPriceId: process.env.STRIPE_PRO_PRICE_ID || '',
 };
 
 export const ROOT_DIR = ROOT;

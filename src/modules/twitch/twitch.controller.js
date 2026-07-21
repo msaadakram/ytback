@@ -72,7 +72,7 @@ export const downloadTwitchVideo = wrapAsync(async (req, res) => {
         title = 'twitch-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'twitch', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'twitch', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadTwitchAudio = wrapAsync(async (req, res) => {
         title = 'twitch-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'twitch', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'twitch', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

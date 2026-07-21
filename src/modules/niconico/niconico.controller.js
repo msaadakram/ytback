@@ -72,7 +72,7 @@ export const downloadNiconicoVideo = wrapAsync(async (req, res) => {
         title = 'niconico-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'niconico', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'niconico', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadNiconicoAudio = wrapAsync(async (req, res) => {
         title = 'niconico-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'niconico', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'niconico', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

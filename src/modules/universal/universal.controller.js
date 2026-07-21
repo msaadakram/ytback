@@ -6,6 +6,7 @@ import { detectPlatform } from '../../utils/platformDetector.js';
 import { formatBytes, formatDuration } from '../../utils/format.js';
 import { Errors } from '../../utils/HttpError.js';
 import { wrapAsync } from '../../middlewares/error.js';
+import { logUsage } from '../../core/usage.js';
 
 const AUDIO_EXTS = ['mp3', 'm4a', 'wav', 'aac', 'opus', 'flac'];
 
@@ -88,6 +89,7 @@ export const getUniversalInfo = wrapAsync(async (req, res) => {
   };
 
   res.json({ success: true, data });
+  logUsage(req.user, 'info', { platform });
 });
 
 /**
@@ -116,6 +118,7 @@ export const downloadUniversalVideo = wrapAsync(async (req, res) => {
     quality,
     container: container || 'mp4',
     title,
+    userId: req.user?.id || null,
   });
 
   downloadQueue.add(() => downloadVideo(job)).catch((err) => {
@@ -135,6 +138,7 @@ export const downloadUniversalVideo = wrapAsync(async (req, res) => {
       status: 'started',
     },
   });
+  logUsage(req.user, 'download', { platform });
 });
 
 /**
@@ -162,6 +166,7 @@ export const downloadUniversalAudio = wrapAsync(async (req, res) => {
     format: format || 'mp3',
     quality: String(quality || '320'),
     title,
+    userId: req.user?.id || null,
   });
 
   downloadQueue.add(() => downloadAudio(job)).catch((err) => {
@@ -181,4 +186,5 @@ export const downloadUniversalAudio = wrapAsync(async (req, res) => {
       status: 'started',
     },
   });
+  logUsage(req.user, 'audio', { platform });
 });

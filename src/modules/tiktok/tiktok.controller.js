@@ -75,7 +75,7 @@ export const downloadTikTokVideo = wrapAsync(async (req, res) => {
         title = 'tiktok-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'tiktok', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'tiktok', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -101,7 +101,7 @@ export const downloadTikTokAudio = wrapAsync(async (req, res) => {
         title = 'tiktok-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'tiktok', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'tiktok', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

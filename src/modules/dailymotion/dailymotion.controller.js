@@ -72,7 +72,7 @@ export const downloadDailymotionVideo = wrapAsync(async (req, res) => {
         title = 'dailymotion-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'dailymotion', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'dailymotion', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadDailymotionAudio = wrapAsync(async (req, res) => {
         title = 'dailymotion-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'dailymotion', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'dailymotion', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

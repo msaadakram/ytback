@@ -74,7 +74,7 @@ export const downloadRedditVideo = wrapAsync(async (req, res) => {
         title = 'reddit-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'reddit', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'reddit', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -100,7 +100,7 @@ export const downloadRedditAudio = wrapAsync(async (req, res) => {
         title = 'reddit-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'reddit', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'reddit', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

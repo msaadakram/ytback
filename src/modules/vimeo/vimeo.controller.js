@@ -73,7 +73,7 @@ export const downloadVimeoVideo = wrapAsync(async (req, res) => {
         title = 'vimeo-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'vimeo', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'vimeo', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -99,7 +99,7 @@ export const downloadVimeoAudio = wrapAsync(async (req, res) => {
         title = 'vimeo-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'vimeo', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'vimeo', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

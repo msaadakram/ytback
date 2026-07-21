@@ -72,7 +72,7 @@ export const downloadPinterestVideo = wrapAsync(async (req, res) => {
         title = 'pinterest-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'pinterest', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'pinterest', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadPinterestAudio = wrapAsync(async (req, res) => {
         title = 'pinterest-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'pinterest', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'pinterest', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

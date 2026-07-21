@@ -86,7 +86,7 @@ export const downloadYouTubeVideo = wrapAsync(async (req, res) => {
         title = 'video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'youtube', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'youtube', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -112,7 +112,7 @@ export const downloadYouTubeAudio = wrapAsync(async (req, res) => {
         title = 'audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'youtube', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'youtube', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

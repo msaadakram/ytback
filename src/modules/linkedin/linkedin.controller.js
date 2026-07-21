@@ -72,7 +72,7 @@ export const downloadLinkedinVideo = wrapAsync(async (req, res) => {
         title = 'linkedin-video';
     }
 
-    const job = jobStore.create({ type: 'video', platform: 'linkedin', url, formatId, quality, container, title });
+    const job = jobStore.create({ type: 'video', platform: 'linkedin', url, formatId, quality, container, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadVideo(job))
@@ -98,7 +98,7 @@ export const downloadLinkedinAudio = wrapAsync(async (req, res) => {
         title = 'linkedin-audio';
     }
 
-    const job = jobStore.create({ type: 'audio', platform: 'linkedin', url, format, quality, title });
+    const job = jobStore.create({ type: 'audio', platform: 'linkedin', url, format, quality, title, userId: req.user?.id || null });
 
     downloadQueue
         .add(() => downloadAudio(job))

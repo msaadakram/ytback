@@ -3,6 +3,11 @@ import { health, getCapabilities } from '../controllers/healthController.js';
 import { getJobStatus, getJobResult } from '../controllers/downloadController.js';
 import { downloadFile } from '../controllers/fileController.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
+import authRoutes from '../modules/auth/auth.routes.js';
+import userRoutes from '../modules/user/user.routes.js';
+import dashboardRoutes from '../modules/dashboard/dashboard.routes.js';
+import apiKeysRoutes from '../modules/apikeys/apikeys.routes.js';
+import billingRoutes from '../modules/billing/billing.routes.js';
 import youtubeRoutes from '../modules/youtube/youtube.routes.js';
 import tiktokRoutes from '../modules/tiktok/tiktok.routes.js';
 import instagramRoutes from '../modules/instagram/instagram.routes.js';
@@ -19,6 +24,7 @@ import linkedinRoutes from '../modules/linkedin/linkedin.routes.js';
 import pinterestRoutes from '../modules/pinterest/pinterest.routes.js';
 import niconicoRoutes from '../modules/niconico/niconico.routes.js';
 import universalRoutes from '../modules/universal/universal.routes.js';
+import { optionalAuth } from '../middlewares/userAuth.js';
 
 const router = Router();
 
@@ -26,7 +32,18 @@ const router = Router();
 router.get('/health', health);
 router.get('/capabilities', getCapabilities);
 
-// Platform modules
+// ─── User-facing modules (require full auth) ───
+router.use('/auth', authRoutes);
+router.use('/user', userRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/api-keys', apiKeysRoutes);
+router.use('/billing', billingRoutes);
+
+// ─── Optional auth middleware: attaches req.user when a valid token/key is ───
+// present, sets req.user = null otherwise. Does NOT block anonymous requests.
+router.use(optionalAuth);
+
+// Platform modules (now have access to req.user for download attribution)
 router.use('/youtube', youtubeRoutes);
 router.use('/tiktok', tiktokRoutes);
 router.use('/instagram', instagramRoutes);
