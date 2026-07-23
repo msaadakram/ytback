@@ -27,8 +27,11 @@ function outTemplate(jobId, ext) {
 /**
  * Resolve the actual output file from yt-dlp's reported filename or by
  * scanning the temp directory for files matching the job id prefix.
+ * Prefers files with audio extensions (.m4a, .mp3, .wav, etc.).
  */
 function resolveOutputFile(reportedName, job) {
+    const AUDIO_EXTS = ['.m4a', '.mp3', '.wav', '.aac', '.opus', '.flac', '.ogg', '.webm', '.mp4', '.mkv'];
+
     if (reportedName && path.isAbsolute(reportedName) && fs.existsSync(reportedName)) {
         return reportedName;
     }
@@ -39,9 +42,14 @@ function resolveOutputFile(reportedName, job) {
     const prefix = sanitizeFilename(job.id).slice(0, 40);
     const files = fs.readdirSync(config.tempDir).filter((f) => f.startsWith(prefix));
     if (files.length === 0) return null;
+
+    // Prefer files with audio extensions, then fall back to newest file
+    const audioFiles = files.filter((f) => AUDIO_EXTS.includes(path.extname(f).toLowerCase()));
+    const candidates = audioFiles.length > 0 ? audioFiles : files;
+
     let best = null;
     let bestMtime = 0;
-    for (const f of files) {
+    for (const f of candidates) {
         const full = path.join(config.tempDir, f);
         const st = fs.statSync(full);
         if (st.mtimeMs > bestMtime) {
@@ -61,6 +69,27 @@ async function safeUnlink(p) {
 }
 
 /**
+ * Build platform-specific extractor args for yt-dlp.
+ * Different platforms need different extractor args to work reliably.
+ */
+function buildExtractorArgs(platform) {
+    const args = [];
+
+    // Always include generic impersonation for better compatibility
+    args.push('--extractor-args', 'generic:impersonate');
+
+    // YouTube needs android client for better format availability
+    args.push('--extractor-args', 'youtube:player_client=android,web');
+
+    // Facebook requires specific extractor args to bypass restrictions
+    if (platform === 'facebook') {
+        args.push('--extractor-args', 'facebook:skip=dash,stories');
+    }
+
+    return args;
+}
+
+/**
  * Extract audio from a video URL using yt-dlp.
  * Downloads to a temp .m4a file and returns the file path.
  */
@@ -71,6 +100,8 @@ async function extractAudio(job) {
         '--no-playlist',
         '--newline',
         '--no-mtime',
+        '--no-check-certificate',
+        ...buildExtractorArgs(job.platform),
         '-o', outTpl,
         '-x', // extract audio
         '--audio-format', 'm4a',
@@ -85,7 +116,7 @@ async function extractAudio(job) {
     }
 
     jobStore.update(job.id, { status: JobStatus.DOWNLOADING, startedAt: Date.now() });
-    logger.info({ jobId: job.id, type: 'transcript' }, 'audio extraction started');
+    logger.info({ jobId: job.id, type: 'transcript', platform: job.platform }, 'audio extraction started');
 
     let lastFilename = null;
 

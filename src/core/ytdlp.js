@@ -21,14 +21,34 @@ function injectCookieArgs(args, platform) {
     }
 }
 
+/**
+ * Build platform-specific extractor args for yt-dlp.
+ * Different platforms need different extractor args to work reliably.
+ */
+function buildExtractorArgs(platform) {
+    const args = [];
+
+    // Always include generic impersonation for better compatibility
+    args.push('--extractor-args', 'generic:impersonate');
+
+    // YouTube needs android client for better format availability
+    args.push('--extractor-args', 'youtube:player_client=android,web');
+
+    // Facebook requires specific extractor args to bypass restrictions
+    if (platform === 'facebook') {
+        args.push('--extractor-args', 'facebook:skip=dash,stories');
+    }
+
+    return args;
+}
+
 export function fetchInfo(url, platform, { timeoutMs = config.maxDownloadTime * 1000 } = {}) {
     const args = [
         '--no-warnings',
         '--no-playlist',
         '--dump-single-json',
         '--no-check-certificate',
-        '--extractor-args', 'youtube:player_client=android,web',
-        '--extractor-args', 'generic:impersonate',
+        ...buildExtractorArgs(platform),
         url,
     ];
     injectCookieArgs(args, platform);
@@ -134,6 +154,7 @@ export function runDownload(args, platform, { onProgress, onFilename, timeoutMs 
         const proc = spawn(config.ytdlpBin, args, { windowsHide: true });
         let timedOut = false;
         let lastFilename = null;
+        let stderrBuffer = '';
 
         const timer = setTimeout(() => {
             timedOut = true;
@@ -157,6 +178,7 @@ export function runDownload(args, platform, { onProgress, onFilename, timeoutMs 
 
         proc.stderr.on('data', (d) => {
             const text = d.toString();
+            stderrBuffer += text;
             // yt-dlp puts progress on stderr in some builds; try parsing too
             for (const line of text.split('\n')) {
                 const trimmed = line.trim();
@@ -164,7 +186,7 @@ export function runDownload(args, platform, { onProgress, onFilename, timeoutMs 
                 const prog = parseProgressLine(trimmed);
                 if (prog) onProgress?.(prog);
             }
-            if (/error|traceback/i.test(text)) {
+            if (/error|traceback|unable|fail|invalid/i.test(text)) {
                 logger.warn({ stderr: text.trim() }, 'yt-dlp stderr');
             }
         });
@@ -178,7 +200,13 @@ export function runDownload(args, platform, { onProgress, onFilename, timeoutMs 
             clearTimeout(timer);
             if (timedOut) return reject(Errors.DownloadFailed('yt-dlp timed out'));
             if (code !== 0 && code !== null) {
-                return reject(Errors.DownloadFailed(`yt-dlp exited with code ${code}`));
+                // Include stderr in the error message for debugging
+                const stderrMsg = stderrBuffer.trim().split('\n').pop() || '';
+                const errMsg = stderrMsg
+                    ? `yt-dlp exited with code ${code}: ${stderrMsg}`
+                    : `yt-dlp exited with code ${code}`;
+                logger.error({ code, stderr: stderrBuffer.trim() }, 'yt-dlp failed');
+                return reject(Errors.DownloadFailed(errMsg));
             }
             resolve({ filename: lastFilename });
         });
