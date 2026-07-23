@@ -43,3 +43,10 @@ export const universalAudioDownloadSchema = z.object({
     .refine((v) => /^\d+$/.test(v), { message: 'quality must be a number (e.g. 320)' })
     .default('320'),
 });
+
+export const universalTranscribeSchema = z.object({
+  url: urlField,
+  format: z
+    .enum(['txt', 'srt', 'json'])
+    .default('txt'),
+});

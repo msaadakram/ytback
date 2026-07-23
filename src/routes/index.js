@@ -24,6 +24,7 @@ import linkedinRoutes from '../modules/linkedin/linkedin.routes.js';
 import pinterestRoutes from '../modules/pinterest/pinterest.routes.js';
 import niconicoRoutes from '../modules/niconico/niconico.routes.js';
 import universalRoutes from '../modules/universal/universal.routes.js';
+import transcriptionRoutes from '../modules/transcription/transcription.routes.js';
 import { optionalAuth } from '../middlewares/userAuth.js';
 
 const router = Router();
@@ -59,6 +60,9 @@ router.use('/snapchat', snapchatRoutes);
 router.use('/linkedin', linkedinRoutes);
 router.use('/pinterest', pinterestRoutes);
 router.use('/niconico', niconicoRoutes);
+
+// Transcription endpoint — auto-detect platform for any URL
+router.use('/transcribe', transcriptionRoutes);
 
 // Universal endpoint — auto-detect platform for any URL
 router.use('/', universalRoutes);

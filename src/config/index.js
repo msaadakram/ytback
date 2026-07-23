@@ -56,6 +56,9 @@ export const config = {
   userSessionTtlHours: parseInt(process.env.USER_SESSION_TTL_HOURS || '720', 10),
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
 
+  // Groq API key for Whisper transcription.
+  groqApiKey: process.env.GROQ_API_KEY || '',
+
   // Stripe (optional — billing degrades gracefully when unset).
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',

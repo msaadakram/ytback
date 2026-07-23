@@ -1,5 +1,6 @@
 import { fetchInfo } from '../../core/ytdlp.js';
 import { downloadVideo, downloadAudio } from '../../core/download.js';
+import { transcribeAudio } from '../../core/transcription.js';
 import { jobStore, JobStatus } from '../../core/jobStore.js';
 import { downloadQueue } from '../../queue/index.js';
 import { detectPlatform } from '../../utils/platformDetector.js';
@@ -187,4 +188,52 @@ export const downloadUniversalAudio = wrapAsync(async (req, res) => {
     },
   });
   logUsage(req.user, 'audio', { platform });
+});
+
+/**
+ * POST /api/transcribe
+ * Accept any URL, auto-detect platform, enqueue a transcription job.
+ * Downloads audio from the video, transcribes with Groq Whisper, returns transcript.
+ */
+export const transcribeUniversal = wrapAsync(async (req, res) => {
+  const { url, format } = req.validated;
+
+  const detected = detectPlatform(url);
+  const platform = detected ? detected.platform : 'generic';
+
+  let title;
+  try {
+    const info = await fetchInfo(url, platform);
+    title = info.title;
+  } catch {
+    title = 'audio';
+  }
+
+  const job = jobStore.create({
+    type: 'transcript',
+    platform,
+    url,
+    format: format || 'txt',
+    title,
+    userId: req.user?.id || null,
+  });
+
+  downloadQueue.add(() => transcribeAudio(job)).catch((err) => {
+    jobStore.update(job.id, {
+      status: JobStatus.FAILED,
+      error: err.message || String(err),
+      completedAt: Date.now(),
+    });
+  });
+
+  res.status(202).json({
+    success: true,
+    data: {
+      job_id: job.id,
+      platform,
+      type: 'transcript',
+      status: 'started',
+    },
+  });
+  logUsage(req.user, 'transcribe', { platform });
 });
