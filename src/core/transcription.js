@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import Groq from 'groq-sdk';
-import { config } from '../config/index.js';
+import { config, ROOT_DIR } from '../config/index.js';
 import logger from '../utils/logger.js';
 import { Errors } from '../utils/HttpError.js';
 import { sanitizeFilename, formatBytes } from '../utils/format.js';
@@ -109,10 +109,13 @@ async function extractAudio(job) {
         job.url,
     ];
 
-    // Inject ffmpeg location if configured as an absolute path
-    const ffmpegBin = config.ffmpegBin;
-    if (ffmpegBin && path.isAbsolute(ffmpegBin)) {
-        args.unshift('--ffmpeg-location', path.dirname(ffmpegBin));
+    // Inject ffmpeg location (resolve relative paths against project root)
+    const ffmpegBinRaw = config.ffmpegBin;
+    const ffmpegBinResolved = ffmpegBinRaw ? (path.isAbsolute(ffmpegBinRaw) ? ffmpegBinRaw : path.resolve(ROOT_DIR, ffmpegBinRaw)) : null;
+    if (ffmpegBinResolved && fs.existsSync(ffmpegBinResolved)) {
+        args.unshift('--ffmpeg-location', path.dirname(ffmpegBinResolved));
+    } else if (ffmpegBinResolved) {
+        logger.warn({ ffmpegPath: ffmpegBinResolved }, 'ffmpeg binary not found at expected path');
     }
 
     jobStore.update(job.id, { status: JobStatus.DOWNLOADING, startedAt: Date.now() });
