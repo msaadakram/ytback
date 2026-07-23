@@ -196,7 +196,7 @@ export const downloadUniversalAudio = wrapAsync(async (req, res) => {
  * Downloads audio from the video, transcribes with Groq Whisper, returns transcript.
  */
 export const transcribeUniversal = wrapAsync(async (req, res) => {
-  const { url, format } = req.validated;
+  const { url, format, language } = req.validated;
 
   const detected = detectPlatform(url);
   const platform = detected ? detected.platform : 'generic';
@@ -214,6 +214,7 @@ export const transcribeUniversal = wrapAsync(async (req, res) => {
     platform,
     url,
     format: format || 'txt',
+    language: language || 'en',
     title,
     userId: req.user?.id || null,
   });

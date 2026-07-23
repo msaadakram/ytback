@@ -191,6 +191,102 @@ async function transcribeWithGroq(audioPath) {
 }
 
 /**
+ * Language name map for user-friendly AI prompts (50+ languages).
+ */
+const LANGUAGE_NAMES = {
+    auto: 'the detected language',
+    en: 'English', es: 'Spanish', fr: 'French', de: 'German',
+    pt: 'Portuguese', ja: 'Japanese', ar: 'Arabic', ru: 'Russian', zh: 'Chinese (Mandarin)',
+    hi: 'Hindi', ur: 'Urdu', bn: 'Bengali', pa: 'Punjabi', ta: 'Tamil',
+    te: 'Telugu', ml: 'Malayalam', kn: 'Kannada', gu: 'Gujarati', mr: 'Marathi',
+    sa: 'Sanskrit', ne: 'Nepali', si: 'Sinhala', my: 'Burmese', th: 'Thai',
+    vi: 'Vietnamese', ko: 'Korean', id: 'Indonesian', ms: 'Malay', tl: 'Filipino/Tagalog',
+    tr: 'Turkish', it: 'Italian', nl: 'Dutch', pl: 'Polish', cs: 'Czech',
+    sk: 'Slovak', hu: 'Hungarian', ro: 'Romanian', bg: 'Bulgarian', hr: 'Croatian',
+    sr: 'Serbian', sl: 'Slovenian', el: 'Greek', he: 'Hebrew', fa: 'Persian/Farsi',
+    sw: 'Swahili', am: 'Amharic', yo: 'Yoruba', ig: 'Igbo', ha: 'Hausa',
+    zu: 'Zulu', af: 'Afrikaans', sv: 'Swedish', no: 'Norwegian', da: 'Danish',
+    fi: 'Finnish', is: 'Icelandic', et: 'Estonian', lv: 'Latvian', lt: 'Lithuanian',
+};
+
+/**
+ * Translate / rewrite transcript text to the target language using Groq Chat API.
+ * Supports 50+ languages, auto-detect, and romanization (native script → Latin/Roman).
+ * Falls back to the original text if the API call fails.
+ */
+async function translateWithGroq(text, language) {
+    if (!config.groqApiKey) return text;
+
+    const groq = new Groq({ apiKey: config.groqApiKey });
+    const targetName = LANGUAGE_NAMES[language] || language;
+
+    logger.info({ targetLanguage: language, textLength: text.length }, 'sending transcript to Groq Chat for translation');
+
+    try {
+        let systemPrompt;
+
+        if (language === 'auto') {
+            // Auto-detect: identify the language, then output in English Roman style
+            systemPrompt =
+                'You are a professional multilingual transcriber. ' +
+                'The user will provide a transcript that may be in any language. ' +
+                'Steps:\n' +
+                '1. Identify the original language of the text.\n' +
+                '2. Translate the text into English.\n' +
+                '3. If the original text was NOT already in English, provide a romanized transliteration ' +
+                'of the original text in English/Latin script (so native speakers can read it in Roman letters).\n' +
+                'Output format:\n' +
+                '[Detected Language: <language name>]\n\n' +
+                '[English Translation]\n<translated text>\n\n' +
+                '[Romanized Transliteration]\n<romanized text>\n\n' +
+                'If the original text is already in English, just output the text as-is with no extra labels.';
+        } else if (language === 'en') {
+            // English: just romanize non-Latin scripts into Roman letters
+            systemPrompt =
+                'You are a professional transcriber. The user will provide a transcript. ' +
+                'If the text contains any non-Latin script (e.g. Devanagari, Arabic, Chinese, etc.), ' +
+                'provide a romanized transliteration of it in English/Latin letters so it can be read ' +
+                'by English speakers. Preserve meaning and tone. Output ONLY the romanized text, nothing else. ' +
+                'If the text is already in Latin script, output it as-is.';
+        } else {
+            // Specific target language: translate + romanize if non-Latin
+            const usesLatin = ['en', 'es', 'fr', 'de', 'pt', 'it', 'nl', 'pl', 'cs', 'sk',
+                'hu', 'ro', 'hr', 'sl', 'sv', 'no', 'da', 'fi', 'is', 'et', 'lv', 'lt',
+                'tr', 'id', 'ms', 'tl', 'sw', 'af', 'vi', 'tl'].includes(language);
+
+            systemPrompt = usesLatin
+                ? `You are a professional translator. Translate the following transcript into ${targetName}. ` +
+                  `Preserve the original meaning, tone, and formatting. Output ONLY the translated text, nothing else.`
+                : `You are a professional translator. The following transcript needs to be translated into ${targetName}. ` +
+                  `Output the text in TWO parts:\n\n` +
+                  `[${targetName} Script]\n<text in ${targetName} native script>\n\n` +
+                  `[Romanized]\n<text transliterated in Roman/Latin letters>\n\n` +
+                  `Preserve the original meaning, tone, and formatting.`;
+        }
+
+        const chat = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: text },
+            ],
+            temperature: 0.3,
+            max_completion_tokens: 4096,
+        });
+
+        const translated = chat.choices?.[0]?.message?.content;
+        if (translated) {
+            logger.info({ translatedLength: translated.length }, 'translation complete');
+            return translated;
+        }
+    } catch (err) {
+        logger.warn({ err: err.message, language }, 'translation failed, falling back to original');
+    }
+
+    return text;
+}
+
+/**
  * Save transcript text and structured JSON to the downloads directory.
  * Returns { txtPath, jsonPath, txtFilename, jsonFilename }.
  */
@@ -245,7 +341,11 @@ export async function transcribeAudio(job) {
 
         // Step 2: Transcribe with Groq
         jobStore.update(job.id, { status: JobStatus.PROCESSING, progress: 50 });
-        const { text, segments } = await transcribeWithGroq(audioPath);
+        const { text: rawText, segments } = await transcribeWithGroq(audioPath);
+
+        // Step 2b: Translate to target language via Groq Chat if not English
+        const language = job.language || 'en';
+        const text = await translateWithGroq(rawText, language);
 
         // Step 3: Save transcript files
         jobStore.update(job.id, { status: JobStatus.PROCESSING, progress: 80 });

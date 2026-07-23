@@ -14,7 +14,7 @@ import { logUsage } from '../../core/usage.js';
  * and returns the transcript text in the job result.
  */
 export const transcribeMedia = wrapAsync(async (req, res) => {
-    const { url, format } = req.validated;
+    const { url, format, language } = req.validated;
 
     const detected = detectPlatform(url);
     const platform = detected ? detected.platform : 'generic';
@@ -32,6 +32,7 @@ export const transcribeMedia = wrapAsync(async (req, res) => {
         platform,
         url,
         format: format || 'txt',
+        language: language || 'en',
         title,
         userId: req.user?.id || null,
     });
