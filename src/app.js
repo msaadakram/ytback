@@ -68,7 +68,19 @@ export function createApp() {
   );
 
   app.use(requestTimeout);
+  // Normalize double /api prefix that can happen when API_BASE_URL already
+  // ends with /api (e.g. https://…/api) and the proxy builds /api/api/… .
+  // Express would treat /api/api/auth/... as unknown → 404. Strip the extra.
+  app.use((req, _res, next) => {
+    if (req.url.startsWith('/api/api/')) {
+      req.url = req.url.replace(/^\/api\/api\//, '/api/');
+    }
+    next();
+  });
   app.use('/api', apiLimiter, router);
+  // Fallback mount for double-prefix requests that slip through (e.g. direct
+  // calls to /api/api/auth/forgot-password from a misconfigured client).
+  app.use('/api/api', apiLimiter, router);
   app.use('/download', downloadRouter);
 
   app.get('/', (_req, res) => {

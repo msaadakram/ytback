@@ -27,6 +27,20 @@ import universalRoutes from '../modules/universal/universal.routes.js';
 import transcriptionRoutes from '../modules/transcription/transcription.routes.js';
 import contactRoutes from '../modules/contact/contact.routes.js';
 import { optionalAuth } from '../middlewares/userAuth.js';
+import {
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
+} from '../modules/auth/auth.controller.js';
+import {
+  verifyEmailSchema,
+  resendVerificationSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../modules/auth/auth.validator.js';
+import { validate } from '../middlewares/validate.js';
+import { otpLimiter } from '../middlewares/rateLimit.js';
 
 const router = Router();
 
@@ -71,11 +85,25 @@ router.use('/niconico', niconicoRoutes);
 // Transcription endpoint — auto-detect platform for any URL
 router.use('/transcribe', transcriptionRoutes);
 
-// Universal endpoint — auto-detect platform for any URL
-router.use('/', universalRoutes);
-
-// Admin
+// Admin (must be before universal catch-all)
 router.use('/admin', adminRoutes);
+
+// ─── Fallback aliases for auth code endpoints ───────────────────────────
+// Some deployments/proxies may call the endpoint without the /auth prefix
+// (e.g. /api/forgot-password) — e.g. if the frontend proxy was ever
+// misconfigured to strip the prefix. These aliases ensure the client never
+// sees a spurious 404 for a valid auth operation.
+router.post('/forgot-password', otpLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post('/verify-email', otpLimiter, validate(verifyEmailSchema), verifyEmail);
+router.post('/resend-verification', otpLimiter, validate(resendVerificationSchema), resendVerification);
+router.post('/reset-password', otpLimiter, validate(resetPasswordSchema), resetPassword);
+
+// Universal endpoint — auto-detect platform for any URL
+// NOTE: mounted last among the platform routes so it does not shadow
+// /auth/*, /admin/*, etc. Express falls through to next router when
+// no route matches, but keeping it last is more explicit and avoids
+// accidental shadowing if a future universal route uses a generic pattern.
+router.use('/', universalRoutes);
 
 // Job tracking (shared across platforms)
 router.get('/job/:id', getJobStatus);
