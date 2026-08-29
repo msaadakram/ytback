@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { getOverview, getTimeseries, getRecentDownloads, getDownloadsHistory } from './dashboard.controller.js';
-import { requireUser } from '../../middlewares/userAuth.js';
+import { requireVerifiedUser } from '../../middlewares/userAuth.js';
 
 const router = Router();
 
-router.get('/overview', requireUser, getOverview);
-router.get('/timeseries', requireUser, getTimeseries);
-router.get('/recent-downloads', requireUser, getRecentDownloads);
-router.get('/downloads', requireUser, getDownloadsHistory);
+router.get('/overview', requireVerifiedUser, getOverview);
+router.get('/timeseries', requireVerifiedUser, getTimeseries);
+router.get('/recent-downloads', requireVerifiedUser, getRecentDownloads);
+router.get('/downloads', requireVerifiedUser, getDownloadsHistory);
 
 export default router;

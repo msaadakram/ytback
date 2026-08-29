@@ -208,9 +208,12 @@ export const register = wrapAsync(async (req, res) => {
   });
 
   const user = await db.collection('users').findOne({ _id: insert.insertedId });
-  const { token, expiresAt } = await issueSession(db, user);
 
   // Send the 6-digit verification code to the freshly registered address.
+  // No session is created here — the account is unverified, so we do not
+  // issue a bearer token. The client must verify email then login.
+  // This closes the loophole where an unverified token could access
+  // protected routes if the frontend failed to logout.
   const verification = await issueCode(
     db,
     user.email,
@@ -222,8 +225,6 @@ export const register = wrapAsync(async (req, res) => {
   res.status(201).json({
     success: true,
     data: {
-      token,
-      expires_at: expiresAt,
       verification_required: true,
       email_delivered: verification.delivered,
       user: publicUserShape(user),

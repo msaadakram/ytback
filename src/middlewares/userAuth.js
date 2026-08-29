@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { getDb } from '../db/index.js';
-import { Errors } from '../utils/HttpError.js';
+import { Errors, HttpError } from '../utils/HttpError.js';
 
 /** Hash an API key for storage/lookup using sha256 (plaintext is shown only once). */
 export function hashApiKey(key) {
@@ -67,6 +67,8 @@ function publicUserShape(user) {
     plan: user.plan || 'free',
     plan_expires_at: user.plan_expires_at || null,
     notifications: user.notifications || null,
+    email_verified: user.email_verified !== false,
+    has_password: Boolean(user.password_hash),
     created_at: user.created_at || null,
   };
 }
@@ -94,11 +96,33 @@ export async function requireUser(req, _res, next) {
     }
 
     req.user = publicUserShape(user);
+    // Preserve raw verification flag for downstream checks (legacy users
+    // have no flag and are treated as verified).
+    req.user._rawVerified = user.email_verified;
     req.authMethod = token.startsWith(API_KEY_PREFIX) ? 'api_key' : 'session';
     next();
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Verified-user gate — blocks unverified accounts (email_verified === false)
+ * from accessing sensitive resources. Legacy accounts with no flag are
+ * treated as verified so they are never locked out. Use this for
+ * dashboard/billing/api-keys/user profile etc. Auth routes that must
+ * work before verification (logout, verify-email) should keep requireUser.
+ */
+export async function requireVerifiedUser(req, _res, next) {
+  // First run the standard auth check
+  return requireUser(req, _res, (err) => {
+    if (err) return next(err);
+    const raw = req.user?._rawVerified;
+    if (raw === false) {
+      return next(new HttpError(403, 'EMAIL_NOT_VERIFIED', 'Please verify your email before accessing this resource.'));
+    }
+    next();
+  });
 }
 
 /** Optional auth — attaches req.user when a valid token/key is present, else req.user = null and continues. */
