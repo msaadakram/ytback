@@ -56,7 +56,17 @@ async function sendMail(to, subject, html) {
   if (!config.resendApiKey) {
     logger.warn({ to, subject }, '[DEV MAIL] RESEND_API_KEY not set — email not sent, code logged below');
     logger.warn({ to, subject }, html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
-    return { delivered: false };
+    return { delivered: false, reason: 'missing_api_key' };
+  }
+
+  // Warn when the default onboarding address is used in production — Resend
+  // only allows it to send to the account owner's own email, so all other
+  // recipients will silently fail (or 403). This is a common deploy mistake.
+  if (config.isProd && config.mailFrom.includes('onboarding@resend.dev')) {
+    logger.warn(
+      { to, from: config.mailFrom },
+      'mailFrom still uses onboarding@resend.dev in production — verification emails will fail for external recipients. Set RESEND_FROM to an address on your verified domain.',
+    );
   }
 
   try {
@@ -78,17 +88,30 @@ async function sendMail(to, subject, html) {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      logger.error({ status: res.status, body, to, subject }, 'Resend API returned an error');
-      throw new Error(`Resend API error (HTTP ${res.status})`);
+      // Try to surface Resend's JSON error message when present.
+      let detail = body;
+      try {
+        const parsed = JSON.parse(body);
+        detail = parsed.message || parsed.error || body;
+      } catch {
+        // leave as text
+      }
+      logger.error({ status: res.status, body, detail, to, subject, from: config.mailFrom }, 'Resend API returned an error');
+      const err = new Error(`Resend API error (HTTP ${res.status}): ${detail}`);
+      err.status = res.status;
+      err.body = body;
+      throw err;
     }
 
     const data = await res.json();
     logger.info({ to, subject, id: data.id }, 'email sent via Resend');
     return { delivered: true, id: data.id };
   } catch (err) {
-    if (err instanceof Error && err.name === 'TimeoutError') {
+    if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
       logger.error({ to, subject }, 'Resend API request timed out');
-      throw new Error('Email provider timed out');
+      const e = new Error('Email provider timed out');
+      e.cause = err;
+      throw e;
     }
     throw err;
   }

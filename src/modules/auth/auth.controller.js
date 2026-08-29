@@ -81,7 +81,12 @@ function ensureCodeIndexes(db) {
 /**
  * Generate a 6-digit code for (email, purpose), store it hashed with an expiry,
  * and email it. Enforces a resend cooldown. Throws TooMany when resending too
- * fast. Returns { delivered }.
+ * fast. Returns { delivered, id?, reason?, error? }.
+ *
+ * Critical fix: the code is now generated first, then the mail is attempted,
+ * and the DB is updated AFTER the mail result. On provider failure we store
+ * the code WITHOUT advancing last_sent_at so the user can retry immediately
+ * instead of being locked out for 60s with no email.
  */
 async function issueCode(db, email, purpose, ttlMinutes, mailer) {
   await ensureCodeIndexes(db);
@@ -90,7 +95,8 @@ async function issueCode(db, email, purpose, ttlMinutes, mailer) {
 
   const existing = await col.findOne({ email, purpose });
   if (existing?.last_sent_at) {
-    const elapsed = (now.getTime() - existing.last_sent_at.getTime()) / 1000;
+    const last = existing.last_sent_at instanceof Date ? existing.last_sent_at : new Date(existing.last_sent_at);
+    const elapsed = (now.getTime() - last.getTime()) / 1000;
     if (elapsed < config.emailCodeResendSeconds) {
       const retryIn = Math.ceil(config.emailCodeResendSeconds - elapsed);
       throw Errors.TooMany(`Please wait ${retryIn}s before requesting another code`);
@@ -98,25 +104,60 @@ async function issueCode(db, email, purpose, ttlMinutes, mailer) {
   }
 
   const code = generateSixDigitCode();
+  const codeHash = hashCode(code);
   const expiresAt = new Date(now.getTime() + ttlMinutes * 60 * 1000);
-  await col.updateOne(
-    { email, purpose },
-    {
-      $set: { code_hash: hashCode(code), expires_at: expiresAt, attempts: 0, last_sent_at: now },
-      $setOnInsert: { created_at: now },
-    },
-    { upsert: true },
-  );
 
-  // Registration must not fail when the mail provider is down — the user can
-  // always request a new code via /auth/resend-verification.
+  let delivered = false;
+  let deliveredId = null;
+  let isDevNoKey = false;
+  let mailError = null;
+
   try {
-    const { delivered } = await mailer(email, code);
-    return { delivered };
+    const result = await mailer(email, code);
+    delivered = !!result.delivered;
+    deliveredId = result.id || null;
+    isDevNoKey = result.reason === 'missing_api_key';
+    if (isDevNoKey) {
+      // Dev fallback: code is logged by mailer, also log here for visibility
+      logger.warn({ email, purpose, code }, '[DEV MAIL] code generated (no provider)');
+    }
   } catch (err) {
+    mailError = err;
     logger.error({ err: err.message, email, purpose }, 'failed to send code email');
-    return { delivered: false };
+    // Store the code but do NOT advance last_sent_at so immediate retry is allowed.
+    // This fixes the bug where a provider failure locked the user out for 60s.
+    try {
+      await col.updateOne(
+        { email, purpose },
+        {
+          $set: { code_hash: codeHash, expires_at: expiresAt, attempts: 0 },
+          $setOnInsert: { created_at: now },
+        },
+        { upsert: true },
+      );
+      // For brand-new docs that never had last_sent_at, ensure it stays absent
+      // so the next attempt bypasses the cooldown check.
+    } catch (dbErr) {
+      logger.error({ err: dbErr.message, email, purpose }, 'failed to store code after mail failure');
+    }
+    return { delivered: false, error: err.message };
   }
+
+  // Mail succeeded, or dev fallback (missing key) — store with last_sent_at to enforce cooldown
+  try {
+    await col.updateOne(
+      { email, purpose },
+      {
+        $set: { code_hash: codeHash, expires_at: expiresAt, attempts: 0, last_sent_at: now },
+        $setOnInsert: { created_at: now },
+      },
+      { upsert: true },
+    );
+  } catch (dbErr) {
+    logger.error({ err: dbErr.message, email, purpose }, 'failed to store code after mail success');
+  }
+
+  return { delivered, id: deliveredId, dev: isDevNoKey };
 }
 
 /**
