@@ -25,6 +25,7 @@ import pinterestRoutes from '../modules/pinterest/pinterest.routes.js';
 import niconicoRoutes from '../modules/niconico/niconico.routes.js';
 import universalRoutes from '../modules/universal/universal.routes.js';
 import transcriptionRoutes from '../modules/transcription/transcription.routes.js';
+import contactRoutes from '../modules/contact/contact.routes.js';
 import { optionalAuth } from '../middlewares/userAuth.js';
 
 const router = Router();
@@ -39,6 +40,12 @@ router.use('/user', userRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/api-keys', apiKeysRoutes);
 router.use('/billing', billingRoutes);
+
+// ─── Public marketing / support forms (anonymous) ───
+// POST /api/newsletter/subscribe → footer newsletter
+router.use('/newsletter', contactRoutes);
+// POST /api/contact → contact page "Send us a message"
+router.use('/contact', contactRoutes);
 
 // ─── Optional auth middleware: attaches req.user when a valid token/key is ───
 // present, sets req.user = null otherwise. Does NOT block anonymous requests.

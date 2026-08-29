@@ -27,6 +27,11 @@ export async function connectDb() {
   await db.collection('invoices').createIndex({ user_id: 1, created_at: -1 });
   await db.collection('usage_events').createIndex({ user_id: 1, created_at: -1 });
 
+  // Marketing / support forms
+  await db.collection('newsletter_subscribers').createIndex({ email: 1 }, { unique: true });
+  await db.collection('contact_messages').createIndex({ created_at: -1 });
+  await db.collection('contact_messages').createIndex({ status: 1, created_at: -1 });
+
   logger.info({ uri: URI, db: DB_NAME }, 'mongodb connected');
   return db;
 }
