@@ -125,14 +125,14 @@ export async function seedDemoData(userId) {
   const existingCount = await db.collection('downloads').countDocuments({ user_id: userId });
   if (existingCount > 0) return;
 
-  const now = Date.now();
+  const now = new Date();
   const DAY = 24 * 60 * 60 * 1000;
   const downloads = [];
   const usageEvents = [];
 
   // Generate ~60 days of usage events and ~35 downloads.
   for (let daysAgo = 60; daysAgo >= 0; daysAgo--) {
-    const dayTs = now - daysAgo * DAY;
+    const dayTs = now.getTime() - daysAgo * DAY;
     const dayStart = new Date(dayTs);
 
     // Usage events: 5–25 per day, mix of info/download/audio.

@@ -3,7 +3,14 @@ import { getDb, ObjectId } from '../../db/index.js';
 import { hashPassword, verifyPassword } from '../../db/seed.js';
 import { config } from '../../config/index.js';
 import { wrapAsync } from '../../middlewares/error.js';
-import { Errors } from '../../utils/HttpError.js';
+import { Errors, HttpError } from '../../utils/HttpError.js';
+import {
+  generateSixDigitCode,
+  hashCode,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+} from '../../utils/mailer.js';
+import logger from '../../utils/logger.js';
 
 function generateToken() {
   return crypto.randomUUID();
@@ -32,6 +39,10 @@ function publicUserShape(user) {
     plan: user.plan || 'free',
     plan_expires_at: user.plan_expires_at || null,
     notifications: user.notifications || defaultNotifications(),
+    // Users created before email verification shipped have no flag — treat
+    // them as verified so legacy accounts are never locked out.
+    email_verified: user.email_verified !== false,
+    has_password: Boolean(user.password_hash),
     created_at: user.created_at || null,
   };
 }
@@ -46,6 +57,89 @@ async function issueSession(db, user) {
     created_at: new Date(),
   });
   return { token, expiresAt };
+}
+
+// ─── Verification / reset code helpers ────────────────────────────────────────
+
+let indexesReady = null;
+
+/** Create the auth_codes indexes once per process. */
+function ensureCodeIndexes(db) {
+  if (!indexesReady) {
+    indexesReady = (async () => {
+      const col = db.collection('auth_codes');
+      await col.createIndex({ email: 1, purpose: 1 }, { unique: true });
+      await col.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+    })().catch((err) => {
+      indexesReady = null;
+      logger.error({ err: err.message }, 'failed to create auth_codes indexes');
+    });
+  }
+  return indexesReady;
+}
+
+/**
+ * Generate a 6-digit code for (email, purpose), store it hashed with an expiry,
+ * and email it. Enforces a resend cooldown. Throws TooMany when resending too
+ * fast. Returns { delivered }.
+ */
+async function issueCode(db, email, purpose, ttlMinutes, mailer) {
+  await ensureCodeIndexes(db);
+  const col = db.collection('auth_codes');
+  const now = new Date();
+
+  const existing = await col.findOne({ email, purpose });
+  if (existing?.last_sent_at) {
+    const elapsed = (now.getTime() - existing.last_sent_at.getTime()) / 1000;
+    if (elapsed < config.emailCodeResendSeconds) {
+      const retryIn = Math.ceil(config.emailCodeResendSeconds - elapsed);
+      throw Errors.TooMany(`Please wait ${retryIn}s before requesting another code`);
+    }
+  }
+
+  const code = generateSixDigitCode();
+  const expiresAt = new Date(now.getTime() + ttlMinutes * 60 * 1000);
+  await col.updateOne(
+    { email, purpose },
+    {
+      $set: { code_hash: hashCode(code), expires_at: expiresAt, attempts: 0, last_sent_at: now },
+      $setOnInsert: { created_at: now },
+    },
+    { upsert: true },
+  );
+
+  // Registration must not fail when the mail provider is down — the user can
+  // always request a new code via /auth/resend-verification.
+  try {
+    const { delivered } = await mailer(email, code);
+    return { delivered };
+  } catch (err) {
+    logger.error({ err: err.message, email, purpose }, 'failed to send code email');
+    return { delivered: false };
+  }
+}
+
+/**
+ * Verify a submitted code for (email, purpose). Deletes the code on success,
+ * increments attempt counter on failure. Throws when invalid/expired/exhausted.
+ */
+async function consumeCode(db, email, purpose, code) {
+  const col = db.collection('auth_codes');
+  const doc = await col.findOne({ email, purpose });
+  if (!doc) throw Errors.BadRequest('Invalid or expired code. Please request a new one.');
+  if (doc.expires_at < new Date()) {
+    await col.deleteOne({ _id: doc._id });
+    throw Errors.BadRequest('Code expired. Please request a new one.');
+  }
+  if (doc.attempts >= config.emailCodeMaxAttempts) {
+    await col.deleteOne({ _id: doc._id });
+    throw Errors.BadRequest('Too many incorrect attempts. Please request a new code.');
+  }
+  if (doc.code_hash !== hashCode(code)) {
+    await col.updateOne({ _id: doc._id }, { $inc: { attempts: 1 } });
+    throw Errors.BadRequest('Invalid code. Please check your email and try again.');
+  }
+  await col.deleteOne({ _id: doc._id });
 }
 
 export const register = wrapAsync(async (req, res) => {
@@ -67,6 +161,7 @@ export const register = wrapAsync(async (req, res) => {
     plan_expires_at: null,
     stripe_customer_id: null,
     notifications: defaultNotifications(),
+    email_verified: false,
     created_at: now,
     updated_at: now,
   });
@@ -74,11 +169,22 @@ export const register = wrapAsync(async (req, res) => {
   const user = await db.collection('users').findOne({ _id: insert.insertedId });
   const { token, expiresAt } = await issueSession(db, user);
 
+  // Send the 6-digit verification code to the freshly registered address.
+  const verification = await issueCode(
+    db,
+    user.email,
+    'verify_email',
+    config.emailCodeTtlMinutes,
+    sendVerificationEmail,
+  );
+
   res.status(201).json({
     success: true,
     data: {
       token,
       expires_at: expiresAt,
+      verification_required: true,
+      email_delivered: verification.delivered,
       user: publicUserShape(user),
     },
   });
@@ -94,6 +200,16 @@ export const login = wrapAsync(async (req, res) => {
     throw Errors.Unauthorized('Invalid email or password');
   }
 
+  // Only email/password signups go through verification; legacy accounts
+  // (no flag) and Google accounts are never blocked.
+  if (user.email_verified === false) {
+    throw new HttpError(
+      403,
+      'EMAIL_NOT_VERIFIED',
+      'Please verify your email address before signing in. Check your inbox for the 6-digit code.',
+    );
+  }
+
   const { token, expiresAt } = await issueSession(db, user);
 
   res.json({
@@ -104,6 +220,88 @@ export const login = wrapAsync(async (req, res) => {
       user: publicUserShape(user),
     },
   });
+});
+
+export const verifyEmail = wrapAsync(async (req, res) => {
+  const { email, code } = req.validated;
+  const db = getDb();
+
+  const user = await db.collection('users').findOne({ email: email.toLowerCase() });
+  if (!user) throw Errors.NotFound('No account found with that email');
+
+  if (user.email_verified !== false) {
+    res.json({ success: true, data: { message: 'Email already verified' } });
+    return;
+  }
+
+  await consumeCode(db, user.email, 'verify_email', code);
+  await db.collection('users').updateOne(
+    { _id: user._id },
+    { $set: { email_verified: true, updated_at: new Date() } },
+  );
+
+  res.json({ success: true, data: { message: 'Email verified successfully' } });
+});
+
+export const resendVerification = wrapAsync(async (req, res) => {
+  const { email } = req.validated;
+  const db = getDb();
+
+  const user = await db.collection('users').findOne({ email: email.toLowerCase() });
+  // Respond identically whether or not the account exists / is verified, so
+  // the endpoint can't be used to enumerate registered emails.
+  if (user && user.email_verified === false) {
+    await issueCode(db, user.email, 'verify_email', config.emailCodeTtlMinutes, sendVerificationEmail);
+  }
+
+  res.json({
+    success: true,
+    data: { message: 'If that email needs verification, a new code has been sent.' },
+  });
+});
+
+export const forgotPassword = wrapAsync(async (req, res) => {
+  const { email } = req.validated;
+  const db = getDb();
+
+  const user = await db.collection('users').findOne({ email: email.toLowerCase() });
+  // Same anti-enumeration policy as resendVerification.
+  if (user && user.password_hash) {
+    await issueCode(
+      db,
+      user.email,
+      'reset_password',
+      config.passwordResetTtlMinutes,
+      sendPasswordResetEmail,
+    );
+  }
+
+  res.json({
+    success: true,
+    data: { message: 'If an account exists for that email, a reset code has been sent.' },
+  });
+});
+
+export const resetPassword = wrapAsync(async (req, res) => {
+  const { email, code, newPassword } = req.validated;
+  const db = getDb();
+
+  const user = await db.collection('users').findOne({ email: email.toLowerCase() });
+  if (!user || !user.password_hash) {
+    throw Errors.BadRequest('Invalid or expired code. Please request a new one.');
+  }
+
+  await consumeCode(db, user.email, 'reset_password', code);
+
+  await db.collection('users').updateOne(
+    { _id: user._id },
+    { $set: { password_hash: hashPassword(newPassword), email_verified: true, updated_at: new Date() } },
+  );
+
+  // Password changed — kill every existing session for this user.
+  await db.collection('user_sessions').deleteMany({ user_id: user._id });
+
+  res.json({ success: true, data: { message: 'Password reset successfully. You can now sign in.' } });
 });
 
 export const logout = wrapAsync(async (req, res) => {

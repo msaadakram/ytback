@@ -56,6 +56,19 @@ export const config = {
   userSessionTtlHours: parseInt(process.env.USER_SESSION_TTL_HOURS || '720', 10),
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
 
+  // Resend (https://resend.com) transactional email delivery. Optional —
+  // verification/reset emails degrade to log output when RESEND_API_KEY is
+  // unset, so local development still works without a mail provider.
+  // RESEND_FROM must use a domain verified in your Resend dashboard.
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  mailFrom: process.env.RESEND_FROM || 'DownForge <onboarding@resend.dev>',
+
+  // Email verification / password reset codes.
+  emailCodeTtlMinutes: parseInt(process.env.EMAIL_CODE_TTL_MINUTES || '10', 10),
+  emailCodeResendSeconds: parseInt(process.env.EMAIL_CODE_RESEND_SECONDS || '60', 10),
+  emailCodeMaxAttempts: parseInt(process.env.EMAIL_CODE_MAX_ATTEMPTS || '6', 10),
+  passwordResetTtlMinutes: parseInt(process.env.PASSWORD_RESET_TTL_MINUTES || '15', 10),
+
   // Groq API key for Whisper transcription.
   groqApiKey: process.env.GROQ_API_KEY || '',
 

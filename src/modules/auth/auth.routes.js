@@ -1,9 +1,27 @@
 import { Router } from 'express';
-import { register, login, logout, getMe, changePassword } from './auth.controller.js';
-import { registerSchema, loginSchema, changePasswordSchema } from './auth.validator.js';
+import {
+  register,
+  login,
+  logout,
+  getMe,
+  changePassword,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
+} from './auth.controller.js';
+import {
+  registerSchema,
+  loginSchema,
+  changePasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from './auth.validator.js';
 import { validate } from '../../middlewares/validate.js';
 import { requireUser } from '../../middlewares/userAuth.js';
-import { infoLimiter } from '../../middlewares/rateLimit.js';
+import { infoLimiter, otpLimiter } from '../../middlewares/rateLimit.js';
 
 const router = Router();
 
@@ -12,5 +30,11 @@ router.post('/login', infoLimiter, validate(loginSchema), login);
 router.post('/logout', requireUser, logout);
 router.get('/me', requireUser, getMe);
 router.post('/change-password', requireUser, validate(changePasswordSchema), changePassword);
+
+// Email verification & password reset (code-based, via Resend).
+router.post('/verify-email', otpLimiter, validate(verifyEmailSchema), verifyEmail);
+router.post('/resend-verification', otpLimiter, validate(resendVerificationSchema), resendVerification);
+router.post('/forgot-password', otpLimiter, validate(forgotPasswordSchema), forgotPassword);
+router.post('/reset-password', otpLimiter, validate(resetPasswordSchema), resetPassword);
 
 export default router;
