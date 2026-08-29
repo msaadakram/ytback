@@ -60,8 +60,11 @@ export const config = {
   // verification/reset emails degrade to log output when RESEND_API_KEY is
   // unset, so local development still works without a mail provider.
   // RESEND_FROM must use a domain verified in your Resend dashboard.
+  // Default uses ytforge.app which is fully verified; downforge.me is also
+  // verified but currently partially_verified. Using onboarding@resend.dev
+  // only works for the Resend account owner's own email, so we avoid it.
   resendApiKey: process.env.RESEND_API_KEY || '',
-  mailFrom: process.env.RESEND_FROM || 'DownForge <onboarding@resend.dev>',
+  mailFrom: process.env.RESEND_FROM || 'DownForge <noreply@ytforge.app>',
 
   // Email verification / password reset codes.
   emailCodeTtlMinutes: parseInt(process.env.EMAIL_CODE_TTL_MINUTES || '10', 10),
