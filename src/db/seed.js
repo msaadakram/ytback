@@ -107,6 +107,9 @@ export async function seedDemoUser() {
       product_updates: false,
       billing_reminders: true,
     },
+    // Seeded demo account is explicitly verified so it can be used without
+    // going through the email verification flow (which requires a real inbox).
+    email_verified: true,
     created_at: now,
     updated_at: now,
   });

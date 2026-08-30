@@ -54,6 +54,13 @@ function codeBlock(code) {
  */
 async function sendMail(to, subject, html) {
   if (!config.resendApiKey) {
+    // In production, missing API key is a deployment error — fail loudly so
+    // the caller can surface it and the user can retry via resend without
+    // being silently stuck. In development, degrade to log-only.
+    if (config.isProd) {
+      logger.error({ to, subject }, 'RESEND_API_KEY not set in production — email not sent');
+      throw new Error('Email service not configured (missing RESEND_API_KEY)');
+    }
     logger.warn({ to, subject }, '[DEV MAIL] RESEND_API_KEY not set — email not sent, code logged below');
     logger.warn({ to, subject }, html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
     return { delivered: false, reason: 'missing_api_key' };

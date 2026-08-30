@@ -20,7 +20,7 @@ import {
   resetPasswordSchema,
 } from './auth.validator.js';
 import { validate } from '../../middlewares/validate.js';
-import { requireUser } from '../../middlewares/userAuth.js';
+import { requireUser, requireVerifiedUser } from '../../middlewares/userAuth.js';
 import { infoLimiter, otpLimiter } from '../../middlewares/rateLimit.js';
 
 const router = Router();
@@ -29,7 +29,7 @@ router.post('/register', infoLimiter, validate(registerSchema), register);
 router.post('/login', infoLimiter, validate(loginSchema), login);
 router.post('/logout', requireUser, logout);
 router.get('/me', requireUser, getMe);
-router.post('/change-password', requireUser, validate(changePasswordSchema), changePassword);
+router.post('/change-password', requireVerifiedUser, validate(changePasswordSchema), changePassword);
 
 // Email verification & password reset (code-based, via Resend).
 router.post('/verify-email', otpLimiter, validate(verifyEmailSchema), verifyEmail);
